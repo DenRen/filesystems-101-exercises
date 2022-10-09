@@ -228,25 +228,6 @@ void ps(void)
 		}
 	}
 
-	int error = 0;
-	if (errno != 0)
-	{
-		error = 1;
-		report_error(proc_dir_name, errno);
-	}
-
-	if (closedir(proc_dir) == -1)
-	{
-		error = 1;
-		report_error(proc_dir_name, errno);
-	}
-
-	if (error == 0)
-	{
-		exit(EXIT_SUCCESS);
-	}
-	else
-	{
-		exit(EXIT_FAILURE);
-	}
+	closedir(proc_dir);
+	exit(EXIT_SUCCESS);
 }
