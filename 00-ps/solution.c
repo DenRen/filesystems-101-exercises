@@ -106,54 +106,23 @@ static size_t get_count_symb(const char *buf, size_t size, char symbol)
 	}
 }
 
-static char **get_argv(char *buf, size_t size)
+static char **get_ptrs(char *buf, size_t size)
 {
 	if (size == 0)
 	{
-		char **argv = (char **)calloc(1, sizeof(char *));
-		if (argv == NULL)
+		char **ptrs = (char **)calloc(1, sizeof(char *));
+		if (ptrs == NULL)
 		{
 			perror("calloc");
 			exit(EXIT_FAILURE);
 		}
 
-		*argv = NULL;
-		return argv;
+		*ptrs = NULL;
+		return ptrs;
 	}
 
 	// Calc number of words
 	size_t num_symb = 1 + get_count_symb(buf, size, '\0');
-	// num_symb = num_symb == 0 ? 1 : num_symb;
-
-	char **argv = (char **)calloc(num_symb, sizeof(char *));
-	if (argv == NULL)
-	{
-		exit(EXIT_FAILURE);
-	}
-
-	const size_t exe_len = strlen(buf) + 1;
-	fill_ptrs(buf + exe_len, size - exe_len, '\0', argv);
-	return argv;
-}
-
-static char **get_environ(char *buf, size_t size)
-{
-	if (size == 0)
-	{
-		char **envp = (char **)calloc(1, sizeof(char *));
-		if (envp == NULL)
-		{
-			perror("calloc");
-			exit(EXIT_FAILURE);
-		}
-
-		*envp = NULL;
-		return envp;
-	}
-
-	// Calc number of words
-	size_t num_symb = 1 + get_count_symb(buf, size, '\0');
-	// num_symb = num_symb == 0 ? 1 : num_symb;
 
 	char **envp = (char **)calloc(num_symb + 1, sizeof(char *));
 	if (envp == NULL)
@@ -199,7 +168,7 @@ static void process_proc_dir(char *str_buf, const char *path)
 	}
 	cmdline_buf[read_size] = '\0';
 	const char *exe = cmdline_buf;
-	char **argv = get_argv(cmdline_buf, read_size);
+	char **argv = get_ptrs(cmdline_buf, read_size);
 
 	// char** envp ----------------------------------------------------------------------
 	str_buf[str_buf_save_size] = '\0';
@@ -222,7 +191,7 @@ static void process_proc_dir(char *str_buf, const char *path)
 		exit(EXIT_FAILURE);
 	}
 	environ_buf[read_size] = '\0';
-	char **envp = get_environ(environ_buf, read_size);
+	char **envp = get_ptrs(environ_buf, read_size);
 
 	// Report
 	report_process(pid, exe, argv, envp);
