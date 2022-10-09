@@ -66,29 +66,6 @@ static ssize_t read_proc_file(const char *path, char *buf, size_t buf_size)
 	return errno == 0 ? readen : -1;
 }
 
-static void fill_ptrs(char *buf, size_t size, char symbol, char **argv)
-{
-	if (size == 0)
-	{
-		*argv = NULL;
-		return;
-	}
-
-	char *const buf_end = buf + size;
-
-	*argv = buf++;
-	while (buf < buf_end)
-	{
-		buf = memchr(buf, symbol, buf_end - buf - 1);
-		if (buf == NULL)
-		{
-			return;
-		}
-
-		*argv++ = ++buf;
-	}
-}
-
 static size_t get_count_symb(const char *buf, size_t size, char symbol)
 {
 	size_t number = 0;
@@ -103,6 +80,29 @@ static size_t get_count_symb(const char *buf, size_t size, char symbol)
 
 		++number;
 		++buf;
+	}
+}
+
+static void fill_ptrs(char *buf, size_t size, char symbol, char **ptrs)
+{
+	if (size == 0)
+	{
+		*ptrs = NULL;
+		return;
+	}
+
+	char *const buf_end = buf + size;
+
+	*ptrs++ = buf++;
+	while (buf < buf_end)
+	{
+		buf = memchr(buf, symbol, buf_end - buf - 1);
+		if (buf == NULL)
+		{
+			return;
+		}
+
+		*ptrs++ = ++buf;
 	}
 }
 
@@ -124,14 +124,14 @@ static char **get_ptrs(char *buf, size_t size)
 	// Calc number of words
 	size_t num_symb = 1 + get_count_symb(buf, size, '\0');
 
-	char **envp = (char **)calloc(num_symb + 1, sizeof(char *));
-	if (envp == NULL)
+	char **ptrs = (char **)calloc(num_symb + 1, sizeof(char *));
+	if (ptrs == NULL)
 	{
 		exit(EXIT_FAILURE);
 	}
 
-	fill_ptrs(buf, size, '\0', envp);
-	return envp;
+	fill_ptrs(buf, size, '\0', ptrs);
+	return ptrs;
 }
 
 // pid_t pid, const char *exe, char **argv, char **envp
