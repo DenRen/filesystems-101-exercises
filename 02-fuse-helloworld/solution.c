@@ -132,7 +132,7 @@ static int my_fs_write(const char* path, const char* src, size_t size, off_t off
 		return -EINVAL;
 	}
 
-	return -EROFS;
+	return EROFS;
 }
 
 static const struct fuse_operations hellofs_ops = {
