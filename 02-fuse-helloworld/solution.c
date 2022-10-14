@@ -80,11 +80,10 @@ static int my_fs_open(const char* path, struct fuse_file_info* file_info)
 		return -ENOENT;
 	}
 
-	// When will write we return EROFS
-	// if ((file_info->flags & O_ACCMODE) != O_RDONLY)
-	// {
-	// 	return -EACCES;
-	// }
+	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
+	{
+		return -EROFS;
+	}
 
 	return 0;
 }
