@@ -74,9 +74,13 @@ void lsof(void)
 			cur_obj->d_name != NULL && isdigit(cur_obj->d_name[0]))
 		{
 			strcat(str_buf, cur_obj->d_name);
+			
 			strcat(str_buf, "/fd/");
 			read_proc_fd(str_buf);
+			str_buf[proc_dir_name_len + strlen(cur_obj->d_name)] = '\0';
 
+			strcat(str_buf, "/map_files/");
+			read_proc_fd(str_buf);
 			str_buf[proc_dir_name_len] = '\0';
 		}
 	}
