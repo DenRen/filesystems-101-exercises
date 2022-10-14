@@ -12,7 +12,45 @@
 #include <string.h>
 #include <sys/stat.h>
 
-void read_proc_fd(char* fd_path)
+struct buf_t
+{
+	char* ptr;
+	size_t size;	
+};
+
+void buf_create(struct buf_t* buf, size_t size)
+{
+	buf->ptr = calloc(size, sizeof(char));
+	if (buf->ptr == NULL)
+	{
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
+	buf->size = size;
+}
+
+void buf_reserve(struct buf_t* buf, size_t new_size)
+{
+	if (new_size > buf->size)
+	{
+		buf->ptr = realloc(buf->ptr, new_size * sizeof(char));
+		if (buf->ptr == NULL)
+		{
+			perror("realloc");
+			exit(EXIT_FAILURE);
+		}
+		buf->size = new_size;
+	}
+}
+
+void buf_free(struct buf_t* buf)
+{
+	free(buf->ptr);
+	buf->ptr = NULL;
+	buf->size = 0;
+}
+
+void read_proc_fd(struct buf_t* buf, char* fd_path)
 {
 	DIR* fd_dir = opendir(fd_path);
 	if (fd_dir == NULL)
@@ -32,15 +70,28 @@ void read_proc_fd(char* fd_path)
 		if (cur_file->d_type == DT_LNK)
 		{
 			strcat(fd_path, cur_file->d_name);
-			ssize_t len = readlink(fd_path, file_name_buf, size_buf);
-			if (len == -1 || len == size_buf)
+
+			// Get size for prepare buf
+			struct stat info = {0};
+			if (lstat(fd_path, &info) == -1)
 			{
 				report_error(fd_path, errno);
 			}
 			else
 			{
-				file_name_buf[len] = '\0';
-				report_file(file_name_buf);
+				const size_t buf_min_size = info.st_size + 1;
+				buf_reserve(buf, buf_min_size);
+
+				ssize_t len = readlink(fd_path, file_name_buf, buf->size);
+				if (len == -1 || len == size_buf)
+				{
+					report_error(fd_path, errno);
+				}
+				else
+				{
+					file_name_buf[len] = '\0';
+					report_file(file_name_buf);
+				}
 			}
 
 			fd_path[path_len_begin] = '\0';
@@ -65,6 +116,9 @@ void lsof(void)
 	const ssize_t proc_dir_name_len = strlen(proc_dir_name);
 	strncpy(str_buf, proc_dir_name, proc_dir_name_len);
 
+	struct buf_t buf = {};
+	buf_create(&buf, 256);
+
 	// Read procs dir
 	errno = 0;
 	struct dirent* cur_obj = NULL;
@@ -76,11 +130,12 @@ void lsof(void)
 			strcat(str_buf, cur_obj->d_name);
 			
 			strcat(str_buf, "/fd/");
-			read_proc_fd(str_buf);
+			read_proc_fd(&buf, str_buf);
 			str_buf[proc_dir_name_len] = '\0';
 		}
 	}
 
+	buf_free(&buf);
 	closedir(proc_dir);
 	exit(EXIT_SUCCESS);
 }
