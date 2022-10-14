@@ -60,8 +60,6 @@ void read_proc_fd(struct buf_t* buf, char* fd_path)
 	}
 
 	// Prepare buf
-	char file_name_buf[1024*1024] = { 0 };
-	const size_t size_buf = sizeof(file_name_buf);
 	const size_t path_len_begin = strlen(fd_path);
 
 	struct dirent* cur_file = NULL;
@@ -82,15 +80,15 @@ void read_proc_fd(struct buf_t* buf, char* fd_path)
 				const size_t buf_min_size = info.st_size + 1;
 				buf_reserve(buf, buf_min_size);
 
-				ssize_t len = readlink(fd_path, file_name_buf, buf->size);
-				if (len == -1 || len == size_buf)
+				ssize_t len = readlink(fd_path, buf->ptr, buf->size);
+				if (len == -1 || (size_t)len == buf->size)
 				{
 					report_error(fd_path, errno);
 				}
 				else
 				{
-					file_name_buf[len] = '\0';
-					report_file(file_name_buf);
+					buf->ptr[len] = '\0';
+					report_file(buf->ptr);
 				}
 			}
 
