@@ -46,7 +46,8 @@ static int my_fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_
 	}
 	else
 	{
-		res = -ENOENT;
+		// res = -ENOENT;
+		res = -EROFS;
 	}
 
 	return res;
