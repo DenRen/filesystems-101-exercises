@@ -95,14 +95,14 @@ static int my_fs_open(const char* path, struct fuse_file_info* file_info)
 
 static int my_fs_read(const char* path, char* buf, size_t size, off_t off, struct fuse_file_info* file_info)
 {
-	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
-	{
-		return -EROFS;
-	}
-
 	if (strcmp(path + 1, g_file_name) != 0)
 	{
 		return -ENOENT;
+	}
+
+	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
+	{
+		return -EROFS;
 	}
 
 	char tmp_buf[512] = { 0 };
@@ -165,6 +165,19 @@ static int my_fs_rename(const char* path, const char* new_name, unsigned int fla
 	return -EROFS;
 }
 
+static int my_fs_opendir(const char* path, struct fuse_file_info* file_info)
+{
+	(void)path;
+	(void)file_info;
+	
+	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
+	{
+		return -EROFS;
+	}
+
+	return 0;
+}
+
 static const struct fuse_operations hellofs_ops = {
 	  .init = my_fs_init
 	, .getattr = my_fs_getattr
@@ -174,6 +187,7 @@ static const struct fuse_operations hellofs_ops = {
 	, .write = my_fs_write
 	, .write_buf = my_fs_write_buf
 	, .rename = my_fs_rename
+	, .opendir = my_fs_opendir
 };
 
 int helloworld(const char* mntp)
