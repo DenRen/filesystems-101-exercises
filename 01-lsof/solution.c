@@ -71,7 +71,7 @@ void read_proc_fd(struct buf_t* buf, char* fd_path)
 
 			// Get size for prepare buf
 			struct stat info = {0};
-			if (lstat(fd_path, &info) == -1)
+			if (stat(fd_path, &info) == -1)
 			{
 				report_error(fd_path, errno);
 			}
