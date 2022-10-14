@@ -52,6 +52,25 @@ static int my_fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_
 	return res;
 }
 
+static int my_fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
+	off_t off, struct fuse_file_info* file_info, enum fuse_readdir_flags flags)
+{
+	(void)off;
+	(void)file_info;
+	(void)flags;
+
+	if (strcmp(path, "/") != 0)
+	{
+		return -ENOENT;
+	}
+
+	filler(buf, ".", NULL, 0, 0);
+	filler(buf, "..", NULL, 0, 0);
+	filler(buf, g_file_name, NULL, 0, 0);
+
+	return 0;
+}
+
 static int my_fs_open(const char* path, struct fuse_file_info* file_info)
 {
 	if (strcmp(path + 1, g_file_name) != 0)
@@ -98,31 +117,24 @@ static int my_fs_read(const char* path, char* buf, size_t size, off_t off, struc
 	return size;
 }
 
-static int my_fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
-	off_t off, struct fuse_file_info* file_info, enum fuse_readdir_flags flags)
+static int my_fs_write(const char* path, const char* src, size_t size, off_t off, struct fuse_file_info* file_info)
 {
-	(void)off;
-	(void)file_info;
-	(void)flags;
+	(void) path;
+	(void) src;
+	(void) size;
+	(void) off;
+	(void) file_info;
 
-	if (strcmp(path, "/") != 0)
-	{
-		return -ENOENT;
-	}
-
-	filler(buf, ".", NULL, 0, 0);
-	filler(buf, "..", NULL, 0, 0);
-	filler(buf, g_file_name, NULL, 0, 0);
-
-	return 0;
+	return -EROFS;
 }
 
 static const struct fuse_operations hellofs_ops = {
 	  .init = my_fs_init
 	, .getattr = my_fs_getattr
+	, .readdir = my_fs_readdir
 	, .open = my_fs_open
 	, .read = my_fs_read
-	, .readdir = my_fs_readdir
+	, .write = my_fs_write
 };
 
 int helloworld(const char* mntp)
