@@ -71,7 +71,7 @@ void read_proc_fd(struct buf_t* buf, char* fd_path)
 
 			// Get size for prepare buf
 			struct stat info = {0};
-			if (stat(fd_path, &info) == -1)
+			if (lstat(fd_path, &info) == -1)
 			{
 				report_error(fd_path, errno);
 			}
@@ -112,10 +112,10 @@ void lsof(void)
 	// Init the buffer for work with paths
 	char str_buf[256] = { 0 };
 	const ssize_t proc_dir_name_len = strlen(proc_dir_name);
-	strncpy(str_buf, proc_dir_name, proc_dir_name_len);
+	strcpy(str_buf, proc_dir_name);
 
 	struct buf_t buf = {};
-	buf_create(&buf, 256);
+	buf_create(&buf, PATH_MAX);
 
 	// Read procs dir
 	errno = 0;
