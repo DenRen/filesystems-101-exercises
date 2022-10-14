@@ -50,6 +50,7 @@ void buf_free(struct buf_t* buf)
 	buf->size = 0;
 }
 
+// contract: size buf must be minimum PATH_MAX
 void read_proc_fd(struct buf_t* buf, char* fd_path)
 {
 	DIR* fd_dir = opendir(fd_path);
