@@ -13,7 +13,7 @@ static void* my_fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 	cfg->kernel_cache = 1;
 
 	cfg->set_uid = 1;
-	cfg->uid = getppid();
+	cfg->uid = getgid();
 
 	cfg->set_gid = 1;
 	cfg->gid = getgid();
