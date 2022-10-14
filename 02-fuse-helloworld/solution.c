@@ -132,7 +132,22 @@ static int my_fs_write(const char* path, const char* src, size_t size, off_t off
 		return -EINVAL;
 	}
 
-	return EROFS;
+	return -EROFS;
+}
+
+
+static int my_fs_write_buf(const char* path, struct fuse_bufvec* buf, off_t off, struct fuse_file_info* file_info)
+{
+	(void)buf;
+	(void)off;
+	(void)file_info;
+
+	if (strcmp(path + 1, g_file_name) != 0)
+	{
+		return -EINVAL;
+	}
+
+	return -EROFS;
 }
 
 static const struct fuse_operations hellofs_ops = {
@@ -142,6 +157,7 @@ static const struct fuse_operations hellofs_ops = {
 	, .open = my_fs_open
 	, .read = my_fs_read
 	, .write = my_fs_write
+	, .write_buf = my_fs_write_buf
 };
 
 int helloworld(const char* mntp)
