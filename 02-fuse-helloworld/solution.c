@@ -12,10 +12,14 @@ static void* my_fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 	(void) conn;
 	cfg->kernel_cache = 1;
 
-	static struct fuse_context ctx = {};
-	ctx.pid = getpid();
+	const pid_t pid = getpid();
+	cfg->set_uid = 1;
+	cfg->uid = pid;
 
-	return &ctx;
+	cfg->set_gid = 1;
+	cfg->gid = pid;
+
+	return NULL;
 }
 
 static int my_fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_info* file_info)
@@ -105,28 +109,12 @@ static int my_fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
-static int my_fs_access(const char* path, int mask)
-{
-	(void) mask;
-
-	if (strcmp(path, "/") == 0 || strcmp(path, g_file_name) == 0)
-	{
-		return 0;
-	}
-	else
-	{
-		return -EACCES;
-	}
-}
-
 static const struct fuse_operations hellofs_ops = {
 	  .init 	= my_fs_init
 	, .getattr 	= my_fs_getattr
 	, .open 	= my_fs_open
 	, .read 	= my_fs_read
 	, .readdir	= my_fs_readdir
-	, .access   = my_fs_access
-	// .write = my_fs_write
 };
 
 int helloworld(const char *mntp)
