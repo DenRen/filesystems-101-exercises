@@ -22,7 +22,7 @@ void read_proc_fd(char* fd_path)
 	}
 
 	// Prepare buf
-	char file_name_buf[2048] = { 0 };
+	char file_name_buf[1024*1024] = { 0 };
 	const size_t size_buf = sizeof(file_name_buf);
 	const size_t path_len_begin = strlen(fd_path);
 
@@ -76,10 +76,6 @@ void lsof(void)
 			strcat(str_buf, cur_obj->d_name);
 			
 			strcat(str_buf, "/fd/");
-			read_proc_fd(str_buf);
-			str_buf[proc_dir_name_len + strlen(cur_obj->d_name)] = '\0';
-
-			strcat(str_buf, "/map_files/");
 			read_proc_fd(str_buf);
 			str_buf[proc_dir_name_len] = '\0';
 		}
