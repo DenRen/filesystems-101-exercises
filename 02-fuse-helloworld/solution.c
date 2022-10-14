@@ -95,7 +95,10 @@ static int my_fs_open(const char* path, struct fuse_file_info* file_info)
 
 static int my_fs_read(const char* path, char* buf, size_t size, off_t off, struct fuse_file_info* file_info)
 {
-	(void)file_info;
+	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
+	{
+		return -EROFS;
+	}
 
 	if (strcmp(path + 1, g_file_name) != 0)
 	{
