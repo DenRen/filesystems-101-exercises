@@ -36,7 +36,7 @@ static int my_fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_
 	}
 	else if (strcmp(path + 1, g_file_name) == 0)
 	{
-		stbuf->st_mode = S_IFREG | 0666;
+		stbuf->st_mode = S_IFREG | S_IRUSR;
 		stbuf->st_nlink = 1;
 
 		char buf[512] = {};
@@ -73,15 +73,18 @@ static int my_fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 
 static int my_fs_open(const char* path, struct fuse_file_info* file_info)
 {
+	(void)file_info;
+
 	if (strcmp(path + 1, g_file_name) != 0)
 	{
 		return -ENOENT;
 	}
 
-	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
-	{
-		return -EACCES;
-	}
+	// When will write we return EROFS
+	// if ((file_info->flags & O_ACCMODE) != O_RDONLY)
+	// {
+	// 	return -EACCES;
+	// }
 
 	return 0;
 }
@@ -119,13 +122,17 @@ static int my_fs_read(const char* path, char* buf, size_t size, off_t off, struc
 
 static int my_fs_write(const char* path, const char* src, size_t size, off_t off, struct fuse_file_info* file_info)
 {
-	(void) path;
-	(void) src;
-	(void) size;
-	(void) off;
-	(void) file_info;
+	(void)src;
+	(void)size;
+	(void)off;
+	(void)file_info;
 
-	return EROFS;
+	if (strcmp(path + 1, g_file_name) != 0)
+	{
+		return -EINVAL;
+	}
+
+	return -EROFS;
 }
 
 static const struct fuse_operations hellofs_ops = {
