@@ -34,7 +34,7 @@ static int my_fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_
 	}
 	else if (strcmp(path + 1, g_file_name) == 0)
 	{
-		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_mode = S_IFREG | 0666;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = strlen(g_file_content);
 	}
