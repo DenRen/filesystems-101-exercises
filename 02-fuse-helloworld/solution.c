@@ -5,19 +5,18 @@
 #include <errno.h>
 
 const char g_file_name[] = "hello";
-const char g_file_content[] = "Hello fs world!\n";
+const char g_file_content[] = "hello, world!\n";
 
 static void* my_fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 {
 	(void) conn;
 	cfg->kernel_cache = 1;
 
-	const pid_t pid = getpid();
 	cfg->set_uid = 1;
-	cfg->uid = pid;
+	cfg->uid = getppid();
 
 	cfg->set_gid = 1;
-	cfg->gid = pid;
+	cfg->gid = getgid();
 
 	return NULL;
 }
