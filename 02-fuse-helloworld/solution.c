@@ -169,13 +169,21 @@ static int my_fs_opendir(const char* path, struct fuse_file_info* file_info)
 {
 	(void)path;
 	(void)file_info;
-	
+
 	if ((file_info->flags & O_ACCMODE) != O_RDONLY)
 	{
 		return -EROFS;
 	}
 
 	return 0;
+}
+
+static int my_fs_create(const char* path, mode_t mode, struct fuse_file_info* file_info)
+{
+	(void)path;
+	(void)mode;
+	(void)file_info;
+	return -EROFS;
 }
 
 static const struct fuse_operations hellofs_ops = {
@@ -188,6 +196,7 @@ static const struct fuse_operations hellofs_ops = {
 	, .write_buf = my_fs_write_buf
 	, .rename = my_fs_rename
 	, .opendir = my_fs_opendir
+	, .create = my_fs_create
 };
 
 int helloworld(const char* mntp)
