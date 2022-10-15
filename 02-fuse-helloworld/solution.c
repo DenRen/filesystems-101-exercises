@@ -134,6 +134,58 @@ static int my_fs_write(const char* path, const char* src, size_t size, off_t off
 	return 0;
 }
 
+static int my_fs_rename(const char* path, const char* new_name, unsigned int flags)
+{
+	(void)new_name;
+	(void)flags;
+
+	if (strcmp(path + 1, g_file_name) != 0)
+	{
+		return -ENOENT;
+	}
+
+	return -EROFS;
+}
+
+static int my_fs_setxattr(const char* path, const char* name, const char* value, size_t size, int flags)
+{
+	(void)name;
+	(void)flags;
+	(void)value;
+	(void)size;
+	(void)flags;
+
+	if (strcmp(path + 1, g_file_name) != 0)
+	{
+		return -ENOENT;
+	}
+
+	return -EROFS;
+}
+static int my_fs_removexattr(const char* path, const char* name)
+{
+	(void)name;
+
+	if (strcmp(path + 1, g_file_name) != 0)
+	{
+		return -ENOENT;
+	}
+
+	return -EROFS;
+}
+
+static int my_fs_access(const char* path, int mode)
+{
+	(void)path;
+
+	if ((mode & W_OK) != 0)
+	{
+		return -EROFS;
+	}
+
+	return 0;
+}
+
 static const struct fuse_operations hellofs_ops = {
 	  .init = my_fs_init
 	, .getattr = my_fs_getattr
@@ -141,6 +193,10 @@ static const struct fuse_operations hellofs_ops = {
 	, .open = my_fs_open
 	, .read = my_fs_read
 	, .write = my_fs_write
+	, .rename = my_fs_rename
+	, .setxattr = my_fs_setxattr
+	, .removexattr = my_fs_removexattr
+	, .access = my_fs_access
 };
 
 int helloworld(const char* mntp)
