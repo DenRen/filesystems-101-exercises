@@ -195,6 +195,14 @@ static int my_fs_unlink(const char* path)
 	return -EROFS;
 }
 
+static int my_fs_create(const char* path, mode_t mode, struct fuse_file_info* file_info)
+{
+	(void)path;
+	(void)mode;
+	(void)file_info;
+	return -EROFS;
+}
+
 static const struct fuse_operations hellofs_ops = {
 	  .init = my_fs_init
 	, .getattr = my_fs_getattr
@@ -207,6 +215,7 @@ static const struct fuse_operations hellofs_ops = {
 	, .removexattr = my_fs_removexattr
 	, .access = my_fs_access
 	, .unlink = my_fs_unlink
+	, .create = my_fs_create
 };
 
 int helloworld(const char* mntp)
