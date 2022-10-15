@@ -131,7 +131,7 @@ static int my_fs_write(const char* path, const char* src, size_t size, off_t off
 		return -EINVAL;
 	}
 
-	return 0;
+	return -EROFS;
 }
 
 static int my_fs_rename(const char* path, const char* new_name, unsigned int flags)
