@@ -19,6 +19,9 @@ static void* my_fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 	cfg->set_gid = 1;
 	cfg->gid = getgid();
 
+	cfg->set_mode = 1;
+	cfg->umask = ~S_IRUSR;
+
 	return NULL;
 }
 
