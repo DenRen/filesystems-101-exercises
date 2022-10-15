@@ -186,6 +186,12 @@ static int my_fs_access(const char* path, int mode)
 	return 0;
 }
 
+static int my_fs_unlink(const char* path)
+{
+	(void)path;
+	return -EROFS;
+}
+
 static const struct fuse_operations hellofs_ops = {
 	  .init = my_fs_init
 	, .getattr = my_fs_getattr
@@ -197,6 +203,7 @@ static const struct fuse_operations hellofs_ops = {
 	, .setxattr = my_fs_setxattr
 	, .removexattr = my_fs_removexattr
 	, .access = my_fs_access
+	, .unlink = my_fs_unlink
 };
 
 int helloworld(const char* mntp)
