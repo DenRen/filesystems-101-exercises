@@ -45,3 +45,17 @@ int main ()
     exit(EXIT_SUCCESS);
 }
 #endif
+
+#if 0
+int main ()
+{
+    int fd = open("1/not_hello", O_WRONLY | O_CREAT, 0666);
+    if (fd == -1)
+    {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+    close (fd);
+    exit(EXIT_SUCCESS);
+}
+#endif
