@@ -84,11 +84,16 @@ static int copy_impl(int in, int out,
 			break;
 		}
 
+		// Create read req
+		struct io_uring_sqe* sqe = io_uring_get_sqe(ring);
+		if (sqe == NULL)
+		{
+			break;
+		}
+		
 		struct task_t* read_task = &read_tasks[i_worker];
 		unreaded_size -= get_read_task(read_task, buf_size, file_size, unreaded_size);
 
-		// Create read req
-		struct io_uring_sqe* sqe = io_uring_get_sqe(ring);
 		io_uring_prep_read(sqe, in, read_bufs[i_worker], read_task->size, read_task->offset);
 		sqe->user_data = i_worker;
 
