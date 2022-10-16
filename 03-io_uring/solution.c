@@ -3,7 +3,9 @@
 #include <liburing.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/sysinfo.h>
+#include <sys/types.h>
 
 enum {
 	TASK_READ,
@@ -77,7 +79,7 @@ static int copy_impl(int in, int out,
 	for (int i_worker = 0; i_worker < num_bufs; ++i_worker)
 	{
 		// Prepare read task
-		if (uring_unlikely(unreaded_size == 0))
+		if (unreaded_size == 0)
 		{
 			break;
 		}
@@ -142,7 +144,7 @@ static int copy_impl(int in, int out,
 				unwrited_size -= task->size;
 
 				// Prepare read task
-				if (uring_likely(unreaded_size != 0))
+				if (unreaded_size != 0)
 				{
 					// Create task on read
 					unreaded_size -= get_read_task(task, buf_size, file_size, unreaded_size);
