@@ -48,7 +48,46 @@ static void print_location(int fd, const char* file, long line, const char* func
        __typeof__ (b) _b = (b); \
      _a > _b ? _b : _a; })
 
-int copy_file(int in, int out, struct ext2_inode* inode, struct ext2_super_block* sblk)
+static int copy_impl(int in, int out, off_t pos, uint32_t size_read, uint8_t* buf)
+{
+	CHECK_TRUE(lseek(in, pos, SEEK_SET) >= 0
+				&& read(in, buf, size_read) == size_read
+				&& write(out, buf, size_read) == size_read);
+	return 0;
+}
+
+static inline uint32_t calc_size_read(uint32_t unreaded_size, uint32_t blk_size)
+{
+	return unreaded_size >= blk_size ? blk_size : unreaded_size;
+}
+
+static inline int copy_indir_block(int in, int out, uint32_t indir_blk_pos, uint32_t blk_size,
+							       uint8_t* buf, uint8_t* indir_itable_buf,
+							   	   uint64_t* unreaded_size_ptr, uint32_t* unreaded_blks)
+{
+	uint32_t pos = blk_size * indir_blk_pos;
+	uint64_t unreaded_size = *unreaded_size_ptr;
+
+	CHECK_NNEG(lseek(in, pos, SEEK_SET));
+	CHECK_TRUE(read(in, indir_itable_buf, blk_size) == blk_size);
+	const uint32_t* const indir_itable = (uint32_t*)indir_itable_buf;
+
+	const uint32_t indir_blocks_count = blk_size / sizeof(uint32_t);
+	const uint32_t i_indir_blk_end = min(*unreaded_blks, indir_blocks_count);
+	for (uint32_t i_indir_blk = 0; i_indir_blk < i_indir_blk_end; ++i_indir_blk)
+	{
+		const uint32_t size_read = calc_size_read(unreaded_size, blk_size);
+		const uint32_t pos = indir_itable[i_indir_blk] * blk_size;
+		CHECK_NNEG(copy_impl(in, out, pos, size_read, buf));
+		unreaded_size -= size_read;
+	}
+
+	*unreaded_size_ptr = unreaded_size;
+	*unreaded_blks -= i_indir_blk_end;
+	return 0;
+}
+
+static int copy_file(int in, int out, struct ext2_inode* inode, struct ext2_super_block* sblk)
 {
 	const uint32_t blk_size = 1024u << sblk->s_log_block_size;
 
@@ -62,10 +101,9 @@ int copy_file(int in, int out, struct ext2_inode* inode, struct ext2_super_block
 	const uint32_t i_dir_blk_end = min(unreaded_blks, (uint32_t)EXT2_NDIR_BLOCKS);
 	for (uint32_t i_dir_blk = 0; i_dir_blk < i_dir_blk_end; ++i_dir_blk)
 	{
-		const uint32_t size_read = unreaded_size >= blk_size ? blk_size : unreaded_size;
-		CHECK_TRUE(lseek(in, inode->i_block[i_dir_blk] * blk_size, SEEK_SET) >= 0
-				   && read(in, buf, size_read) == size_read
-				   && write(out, buf, size_read) == size_read);
+		const uint32_t size_read = calc_size_read(unreaded_size, blk_size);
+		const uint32_t pos = inode->i_block[i_dir_blk] * blk_size;
+		CHECK_NNEG(copy_impl(in, out, pos, size_read, buf));
 
 		unreaded_size -= size_read;
 	}
@@ -73,22 +111,30 @@ int copy_file(int in, int out, struct ext2_inode* inode, struct ext2_super_block
 
 	// Read indirect blocks
 	uint8_t indir_itable_buf[blk_size];
-	CHECK_NNEG(lseek(in, blk_size * inode->i_block[EXT2_IND_BLOCK], SEEK_SET));
-	CHECK_TRUE(read(in, indir_itable_buf, blk_size) == blk_size);
-	const uint32_t* const indir_itable = (uint32_t*)indir_itable_buf;
+	const uint32_t indir_blk_pos = inode->i_block[EXT2_IND_BLOCK];
+	CHECK_NNEG(copy_indir_block(in, out, indir_blk_pos, blk_size, buf, indir_itable_buf,
+								&unreaded_size, &unreaded_blks));
 
-	const uint32_t indir_blocks_count = blk_size / sizeof(uint32_t);
-	const uint32_t i_indir_blk_end = min(unreaded_blks, indir_blocks_count);
-	for (uint32_t i_indir_blk = 0; i_indir_blk < i_indir_blk_end; ++i_indir_blk)
+	if (unreaded_size == 0)
+		return 0;
+
+	// Read double indirect blocks
+	uint8_t dbl_indir_itable_buf[blk_size];
+	const uint32_t dbl_indir_blk_pos = blk_size * inode->i_block[EXT2_DIND_BLOCK];
+	CHECK_NNEG(lseek(in, dbl_indir_blk_pos, SEEK_SET));
+	CHECK_TRUE(read(in, dbl_indir_itable_buf, blk_size) == blk_size);
+	const uint32_t* const dbl_indir_itable = (uint32_t*)dbl_indir_itable_buf;
+
+	const uint32_t index_per_blk = blk_size / sizeof(uint32_t);
+	for (uint32_t i_indir = 0; i_indir < index_per_blk; ++i_indir)
 	{
-		const uint32_t size_read = unreaded_size >= blk_size ? blk_size : unreaded_size;
-		CHECK_TRUE(lseek(in, indir_itable[i_indir_blk] * blk_size, SEEK_SET) >= 0
-				   && read(in, buf, size_read) == size_read
-				   && write(out, buf, size_read) == size_read);
+		const uint32_t indir_blk_pos = dbl_indir_itable[i_indir];
+		CHECK_NNEG(copy_indir_block(in, out, indir_blk_pos, blk_size, buf, indir_itable_buf,
+									&unreaded_size, &unreaded_blks));
 
-		unreaded_size -= size_read;
+		if (unreaded_size == 0)
+			return 0;
 	}
-	unreaded_blks -= i_indir_blk_end;
 
 	return unreaded_blks ? -1 : 0;
 }
