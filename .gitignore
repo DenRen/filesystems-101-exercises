@@ -5,3 +5,5 @@ a.out
 03-io_uring/in
 03-io_uring/out
 */.vscode
+04-ext2-read-file/img
+04-ext2-read-file/out
