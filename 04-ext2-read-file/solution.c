@@ -2,57 +2,60 @@
 #include <print_lib.h>
 #include <ext2_wrapper.h>
 
-struct copy_data_t
+#include <sys/stat.h>
+
+struct copy_data_2_t
 {
     uint8_t* buf;
     int in, out;
+	uint64_t unreaded_size;
 };
 
-static int copyer(void* data_ptr, off_t pos, uint32_t size_read)
+static inline uint32_t calc_size_read(uint32_t unreaded_size, uint32_t blk_size)
 {
-    (void)pos;
+	return unreaded_size >= blk_size ? blk_size : unreaded_size;
+}
 
-    struct copy_data_t* data = (struct copy_data_t*)data_ptr;
-	CHECK_TRUE(read(data->in, data->buf, size_read) == size_read
+static int copyer_2(void* data_ptr, off_t blk_pos, uint32_t blk_size)
+{
+    struct copy_data_2_t* data = (struct copy_data_2_t*)data_ptr;
+
+	uint32_t size_read = calc_size_read(data->unreaded_size, blk_size);
+	CHECK_TRUE(lseek(data->in, blk_pos * blk_size, SEEK_SET)
+			   && read(data->in, data->buf, size_read) == size_read
 			   && write(data->out, data->buf, size_read) == size_read);
-	return 0;
+	
+	data->unreaded_size -= size_read;
+	return data->unreaded_size == 0 ? BLK_VIEWER_END : BLK_VIEWER_CONT;
 }
 
 int dump_file_impl(int img, int inode_nr, int out)
 {
 	// Read ext2 super block and ext2 inode
-	CHECK_NNEG(lseek(img, SUPERBLOCK_OFFSET, SEEK_SET));
-
 	struct ext2_super_block sblk = {};
-	CHECK_TRUE(read(img, &sblk, sizeof(sblk)) == sizeof(sblk));
-	CHECK_TRUE(sblk.s_magic == EXT2_SUPER_MAGIC);
+	CHECK_NNEG(read_sblk(img, &sblk));
 
-	const uint32_t blk_size = 1024u << sblk.s_log_block_size;
+	const uint32_t blk_size = get_blk_size(&sblk);
 
-	uint8_t block_group_desc_table[blk_size];
-	memset(block_group_desc_table, 0, sizeof(block_group_desc_table));
-	CHECK_NNEG(lseek(img, blk_size * (sblk.s_first_data_block + 1), SEEK_SET));
-	CHECK_TRUE(read(img, block_group_desc_table, blk_size) == blk_size);
-	struct ext2_group_desc* bg = (struct ext2_group_desc*)block_group_desc_table;
+	uint8_t bg_desc_table_buf[blk_size];
+	CHECK_NNEG(read_blk(img, bg_desc_table_buf, sblk.s_first_data_block + 1, blk_size));
+	struct ext2_group_desc* bg_decs_table = (struct ext2_group_desc*)bg_desc_table_buf;
 
-	uint32_t inode_group = (inode_nr - 1) / sblk.s_inodes_per_group;
-	uint32_t inode_local_index = (inode_nr - 1) % sblk.s_inodes_per_group;
-
-	const uint32_t inode_pos = bg[inode_group].bg_inode_table * blk_size +
-							   inode_local_index * sblk.s_inode_size;
-	CHECK_NNEG(lseek(img, inode_pos, SEEK_SET));
+	const uint32_t inode_pos = get_inode_pos(&sblk, bg_decs_table, inode_nr);
 	struct ext2_inode inode = {};
-	CHECK_TRUE(read(img, &inode, sizeof(struct ext2_inode)) == sizeof(struct ext2_inode));
+	CHECK_NNEG(read_range(img, &inode, inode_pos, sizeof(inode)));
 
 	// Prepare buffer for viewer-copyer
     uint8_t buf[blk_size];
-    struct copy_data_t copy_data = {
+    struct copy_data_2_t copy_data = {
         .buf = buf,
         .in = img,
-        .out = out
+        .out = out,
+		.unreaded_size = inode.i_size + ((uint64_t)inode.i_size_high << 32)
     };
 	
-	CHECK_NNEG(view_inode(img, &sblk, &inode, copyer, &copy_data));
+	if (copy_data.unreaded_size)
+		CHECK_NNEG(view_blocks(img, &sblk, &inode, copyer_2, &copy_data));
 
 	return 0;
 }
