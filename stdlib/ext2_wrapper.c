@@ -88,11 +88,11 @@ int view_blocks(int fd, const struct ext2_super_block* sblk, const struct ext2_i
 
 		CHECK_NNEG(res);
 	}
-	
+
 	const uint32_t indir_blk_pos = inode->i_block[EXT2_IND_BLOCK];
 	if (indir_blk_pos == 0)
 		return 0;
-	
+
 	// Read indirect blocks
 	uint8_t blk_buf[blk_size];
 	int res = view_blocks_indir_block(viewer, user_data, fd, indir_blk_pos, blk_size, blk_buf);
