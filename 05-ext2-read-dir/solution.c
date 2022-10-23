@@ -53,7 +53,7 @@ static int dir_dumper(void* data_ptr, off_t blk_pos, uint32_t blk_size)
 		data->name[entry->name_len] = '\0';
 
 		char type_symb = type2char(entry->file_type);
-		report_file(entry->inode, type_symb, entry->name);
+		report_file(entry->inode, type_symb, data->name);
 
 		unreaded_size -= entry->rec_len;
 		entry = (struct ext2_dir_entry_2*)((uint8_t*)entry + entry->rec_len);
