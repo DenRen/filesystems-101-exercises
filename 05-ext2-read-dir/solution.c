@@ -9,9 +9,25 @@
 #ifdef ENABLE_MYSELF_REPORT_FILE
 void report_file(int inode_nr, char type, const char *name)
 {
-	printf("%d %x %s\n", inode_nr, type, name);
+	printf("%d %c %s\n", inode_nr, type, name);
 }
 #endif
+
+static char type2char(unsigned char type)
+{
+	switch (type)
+	{
+	case EXT2_FT_REG_FILE:
+		return 'r';
+		break;
+	case EXT2_FT_DIR:
+		return 'd';
+		break;
+	default:
+		return '-';
+		break;
+	}
+}
 
 struct dump_dir_data_t
 {
@@ -35,7 +51,8 @@ static int dir_dumper(void* data_ptr, off_t blk_pos, uint32_t blk_size)
 		memcpy(data->name, entry->name, entry->name_len);
 		data->name[entry->name_len] = '\0';
 
-		report_file(entry->inode, entry->file_type, entry->name);
+		char type_symb = type2char(entry->file_type);
+		report_file(entry->inode, type_symb, entry->name);
 
 		entry = (struct ext2_dir_entry_2*)((uint8_t*)entry + entry->rec_len);
 	}
