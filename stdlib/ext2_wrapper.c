@@ -90,17 +90,16 @@ int view_blocks(int fd, const struct ext2_super_block* sblk, const struct ext2_i
 	}
 	
 	const uint32_t indir_blk_pos = inode->i_block[EXT2_IND_BLOCK];
-	CHECK_TRUE(indir_blk_pos != 0);
+	if (indir_blk_pos == 0)
+		return 0;
 	
 	// Read indirect blocks
 	uint8_t blk_buf[blk_size];
 	int res = view_blocks_indir_block(viewer, user_data, fd, indir_blk_pos, blk_size, blk_buf);
-	if (res == BLK_VIEWER_END)
+	if (res == BLK_VIEWER_END || inode->i_block[EXT2_DIND_BLOCK] == 0)
 		return 0;
 
 	CHECK_NNEG(res);
-
-	CHECK_TRUE(inode->i_block[EXT2_DIND_BLOCK] != 0);
 
 	// Read double indirect blocks
 	uint8_t dbl_indir_itable_buf[blk_size];

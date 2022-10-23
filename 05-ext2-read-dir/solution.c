@@ -18,7 +18,7 @@ static char type2char(unsigned char type)
 	switch (type)
 	{
 	case EXT2_FT_REG_FILE:
-		return 'r';
+		return 'f';
 		break;
 	case EXT2_FT_DIR:
 		return 'd';
@@ -45,7 +45,8 @@ static int dir_dumper(void* data_ptr, off_t blk_pos, uint32_t blk_size)
 	CHECK_NNEG(read_blk(data->in, data->buf, blk_pos, blk_size));
 	const struct ext2_dir_entry_2* entry = (struct ext2_dir_entry_2*)data->buf;
 
-	while(entry->inode)
+	uint32_t unreaded_size = blk_size;
+	while(unreaded_size)
 	{
 		CHECK_TRUE(entry->name_len <= EXT2_NAME_LEN);
 		memcpy(data->name, entry->name, entry->name_len);
@@ -54,10 +55,11 @@ static int dir_dumper(void* data_ptr, off_t blk_pos, uint32_t blk_size)
 		char type_symb = type2char(entry->file_type);
 		report_file(entry->inode, type_symb, entry->name);
 
+		unreaded_size -= entry->rec_len;
 		entry = (struct ext2_dir_entry_2*)((uint8_t*)entry + entry->rec_len);
 	}
 
-	return 0;
+	return BLK_VIEWER_CONT;
 }
 
 int dump_dir(int img, int inode_nr)
