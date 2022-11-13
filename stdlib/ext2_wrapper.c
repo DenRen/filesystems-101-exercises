@@ -6,8 +6,7 @@
 
 int read_range(int fd, void* buf, uint32_t pos, uint32_t size)
 {
-	CHECK_TRUE(lseek(fd, pos, SEEK_SET) >= 0
-			   && read(fd, buf, size) == size);
+	CHECK_TRUE(pread(fd, buf, size, pos) == size);
 	return 0;
 }
 

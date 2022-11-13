@@ -9,18 +9,18 @@ struct copy_data_t
 	uint64_t unreaded_size;
 };
 
-static inline uint32_t calc_size_read(uint32_t unreaded_size, uint32_t blk_size)
+static inline uint64_t calc_size_read(uint64_t unreaded_size, uint32_t blk_size)
 {
 	return unreaded_size >= blk_size ? blk_size : unreaded_size;
 }
 
-static int copyer(void* data_ptr, off_t blk_pos, uint32_t blk_size)
+static int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
 {
     struct copy_data_t* data = (struct copy_data_t*)data_ptr;
 
-	uint32_t size_read = calc_size_read(data->unreaded_size, blk_size);
-	CHECK_TRUE(lseek(data->in, blk_pos * blk_size, SEEK_SET)
-			   && read(data->in, data->buf, size_read) == size_read
+	const ssize_t size_read = calc_size_read(data->unreaded_size, blk_size);
+	const off64_t pos = blk_pos * blk_size;
+	CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read
 			   && write(data->out, data->buf, size_read) == size_read);
 	
 	data->unreaded_size -= size_read;

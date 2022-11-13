@@ -27,7 +27,7 @@ enum BLK_VIEWER
 };
 
 // This callbback must return only values from BLK_VIEWER or -errno
-typedef int (*viewer_t)(void* data, off_t pos, uint32_t blk_size);
+typedef int (*viewer_t)(void* data, off64_t pos, uint32_t blk_size);
 
 // This function execute viewer on all data blocks accotiated with inode
 int view_blocks(int fd, const struct ext2_super_block* sblk, const struct ext2_inode* inode,
