@@ -32,3 +32,14 @@ typedef int (*viewer_t)(void* data, off64_t pos, uint32_t blk_size);
 // This function execute viewer on all data blocks accotiated with inode
 int view_blocks(int fd, const struct ext2_super_block* sblk, const struct ext2_inode* inode,
                 viewer_t viewer, void* user_data);
+
+
+// Viewer for copy file
+struct copyer_data_t
+{
+    uint8_t* buf;				// Buffer for ext2 data block
+    int in, out;				// Descriptors of opened src and dest files
+	uint64_t unreaded_size;		// Size of file in bytes
+};
+
+int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size);

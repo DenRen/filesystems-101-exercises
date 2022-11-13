@@ -2,21 +2,14 @@
 #include <print_lib.h>
 #include <ext2_wrapper.h>
 
-struct copy_data_t
-{
-    uint8_t* buf;
-    int in, out;
-	uint64_t unreaded_size;
-};
-
 static inline uint64_t calc_size_read(uint64_t unreaded_size, uint32_t blk_size)
 {
 	return unreaded_size >= blk_size ? blk_size : unreaded_size;
 }
 
-static int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
+int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
 {
-    struct copy_data_t* data = (struct copy_data_t*)data_ptr;
+    struct copyer_data_t* data = (struct copyer_data_t*)data_ptr;
 
 	const ssize_t size_read = calc_size_read(data->unreaded_size, blk_size);
 	const off64_t pos = blk_pos * blk_size;
@@ -45,7 +38,7 @@ int dump_file_impl(int img, int inode_nr, int out)
 
 	// Prepare buffer for viewer-copyer
     uint8_t buf[blk_size];
-    struct copy_data_t copy_data = {
+    struct copyer_data_t copy_data = {
         .buf = buf,
         .in = img,
         .out = out,
