@@ -52,21 +52,37 @@ uint32_t get_inode_pos(const struct ext2_super_block* sblk,
 
 // Contract: exist indirect valid index (indir_table_blk_pos != 0)
 static int view_blocks_indir_block(viewer_t viewer, void* user_data,
-								   int fd, uint32_t indir_table_blk_pos, uint32_t blk_size, uint8_t* indir_itable_buf)
+								   int fd, uint32_t indir_table_blk_pos,
+								   uint32_t blk_size, uint8_t* indir_itable_buf)
 {
-	// Read table of block indexes
-	CHECK_NNEG(read_blk(fd, indir_itable_buf, indir_table_blk_pos, blk_size));
-	const uint32_t* const indir_itable = (uint32_t*)indir_itable_buf;
-
-	// View all used blocks
 	const uint32_t indir_blocks_count = blk_size / sizeof(uint32_t);
-	for (uint32_t i_blk = 0; i_blk < indir_blocks_count; ++i_blk)
-	{
-		int res = viewer(user_data, indir_itable[i_blk], blk_size);
-		if (res == BLK_VIEWER_END)
-			return BLK_VIEWER_END;
 
-		CHECK_NNEG(res);
+	if (indir_table_blk_pos)
+	{
+		// Read table of block indexes
+		CHECK_NNEG(read_blk(fd, indir_itable_buf, indir_table_blk_pos, blk_size));
+		const uint32_t* const indir_itable = (uint32_t*)indir_itable_buf;
+
+		// View all used blocks
+		for (uint32_t i_blk = 0; i_blk < indir_blocks_count; ++i_blk)
+		{
+			int res = viewer(user_data, indir_itable[i_blk], blk_size);
+			if (res == BLK_VIEWER_END)
+				return BLK_VIEWER_END;
+
+			CHECK_NNEG(res);
+		}
+	}
+	else	// Sparse extention
+	{
+		for (uint32_t i_blk = 0; i_blk < indir_blocks_count; ++i_blk)
+		{
+			int res = viewer(user_data, 0, blk_size);
+			if (res == BLK_VIEWER_END)
+				return BLK_VIEWER_END;
+
+			CHECK_NNEG(res);
+		}
 	}
 
 	return BLK_VIEWER_CONT;
@@ -89,8 +105,6 @@ int view_blocks(int fd, const struct ext2_super_block* sblk, const struct ext2_i
 	}
 
 	const uint32_t indir_blk_pos = inode->i_block[EXT2_IND_BLOCK];
-	if (indir_blk_pos == 0)
-		return 0;
 
 	// Read indirect blocks
 	uint8_t blk_buf[blk_size];
@@ -130,10 +144,10 @@ int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
     struct copyer_data_t* data = (struct copyer_data_t*)data_ptr;
 
 	const ssize_t size_read = copyer_calc_size_read(data->unreaded_size, blk_size);
-	if (blk_pos != 0)
+	if (blk_pos)
 	{
 		const off64_t pos = blk_pos * blk_size;
-		CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read);	
+		CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read);
 	}
 	else
 	{

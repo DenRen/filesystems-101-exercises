@@ -26,7 +26,7 @@ int dump_file_impl(int img, int inode_nr, int out)
         .out = out,
 		.unreaded_size = get_inode_file_size(&inode)
     };
-	
+
 	if (copy_data.unreaded_size)
 		CHECK_NNEG(view_blocks(img, &sblk, &inode, copyer, &copy_data));
 
