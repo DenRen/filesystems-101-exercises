@@ -24,7 +24,7 @@ int dump_file_impl(int img, int inode_nr, int out)
         .buf = buf,
         .in = img,
         .out = out,
-		.unreaded_size = inode.i_size + ((uint64_t)inode.i_size_high << 32)
+		.unreaded_size = get_inode_file_size(&inode)
     };
 	
 	if (copy_data.unreaded_size)

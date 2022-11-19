@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+Good links:
+    * https://www.nongnu.org/ext2-doc/ext2.html
+*/
+
 #include <ext2fs/ext2fs.h>
 
 #define min(a,b) 				\
@@ -19,7 +24,13 @@ uint32_t get_blk_size(const struct ext2_super_block* sblk);
 uint32_t get_inode_group(const struct ext2_super_block* sblk, uint32_t inode_nr);
 uint32_t get_inode_local_index(const struct ext2_super_block* sblk, uint32_t inode_nr);
 uint32_t get_inode_pos(const struct ext2_super_block* sblk,
-							         const struct ext2_group_desc* bg_desc_table, uint32_t inode_nr);
+					   const struct ext2_group_desc* bg_desc_table, uint32_t inode_nr);
+
+inline uint64_t get_inode_file_size(const struct ext2_inode* inode)
+{
+	return inode->i_size + ((uint64_t)inode->i_size_high << 32);
+}
+
 enum BLK_VIEWER
 {
 	BLK_VIEWER_END = 0,

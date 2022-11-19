@@ -130,12 +130,17 @@ int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
     struct copyer_data_t* data = (struct copyer_data_t*)data_ptr;
 
 	const ssize_t size_read = copyer_calc_size_read(data->unreaded_size, blk_size);
-	const off64_t pos = blk_pos * blk_size;
-	CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read
-			   && write(data->out, data->buf, size_read) == size_read);
-	
+	if (blk_pos != 0)
+	{
+		const off64_t pos = blk_pos * blk_size;
+		CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read);	
+	}
+	else
+	{
+		memset(data->buf, 0, size_read);
+	}
+	CHECK_TRUE(write(data->out, data->buf, size_read) == size_read);
+
 	data->unreaded_size -= size_read;
 	return data->unreaded_size == 0 ? BLK_VIEWER_END : BLK_VIEWER_CONT;
 }
-
-// TODO: implement viewer for view_blocks and solve copy task (04) use new interface
