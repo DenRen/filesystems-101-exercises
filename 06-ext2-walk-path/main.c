@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 	if (out < 0)
 		errx(1, "open(out) failed");
 
-	int r = dump_file(img, "/hello", out);
+	int r = dump_file(img, "/my/folder/hello", out);
 	if (r < 0)
 		errx(1, "dump_file() failed");
 

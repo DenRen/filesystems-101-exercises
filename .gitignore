@@ -8,3 +8,5 @@ a.out
 04-ext2-read-file/img
 04-ext2-read-file/out
 05-ext2-read-dir/img
+06-ext2-walk-path/img
+06-ext2-walk-path/out

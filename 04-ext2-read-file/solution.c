@@ -2,24 +2,6 @@
 #include <print_lib.h>
 #include <ext2_wrapper.h>
 
-static inline uint64_t calc_size_read(uint64_t unreaded_size, uint32_t blk_size)
-{
-	return unreaded_size >= blk_size ? blk_size : unreaded_size;
-}
-
-int copyer(void* data_ptr, off64_t blk_pos, uint32_t blk_size)
-{
-    struct copyer_data_t* data = (struct copyer_data_t*)data_ptr;
-
-	const ssize_t size_read = calc_size_read(data->unreaded_size, blk_size);
-	const off64_t pos = blk_pos * blk_size;
-	CHECK_TRUE(pread64(data->in, data->buf, size_read, pos) == size_read
-			   && write(data->out, data->buf, size_read) == size_read);
-	
-	data->unreaded_size -= size_read;
-	return data->unreaded_size == 0 ? BLK_VIEWER_END : BLK_VIEWER_CONT;
-}
-
 int dump_file_impl(int img, int inode_nr, int out)
 {
 	// Read ext2 super block and ext2 inode
