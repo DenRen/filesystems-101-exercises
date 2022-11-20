@@ -43,7 +43,9 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 
 	// Get root
 	ntfs_inode* inode = ntfs_inode_open(vol, FILE_root);
-	// CHECK_TRUE(inode != NULL);
+	if (inode == NULL)
+		return NULL;
+
 	char* path = strdup(_path + 1);
 	char* save_path = path;
 
@@ -59,21 +61,19 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 			return NULL;
 		
 		u64 inode_num = ntfs_inode_lookup_by_name(inode, unicode, len_unicode);
-		free(unicode);
-		// CHECK_NNEG(inode_num);
-		
-		inode_num = MREF(inode_num);
 		ntfs_inode_close(inode);
-		inode = ntfs_inode_open(vol, inode_num);
-		if (inode == NULL)
+		free(unicode);
+		if (inode_num == -1ul)
 		{
 			errno = ENOENT;
 			return NULL;
 		}
-
-		if (sep == NULL && errno)
+		
+		inode_num = MREF(inode_num);
+		inode = ntfs_inode_open(vol, inode_num);
+		if (inode == NULL)
 		{
-			errno = ENOTDIR;
+			errno = ENOENT;
 			return NULL;
 		}
 
@@ -105,6 +105,7 @@ int dump_file(int img, const char *path, int out)
 		ntfs_device_free(dev);
 		return -errno;
 	}
+	errno = 0;
 
 	// We need to have the self errno variable, because the NTFS API functions
 	// change errno to 0 if all good
@@ -114,6 +115,11 @@ int dump_file(int img, const char *path, int out)
 	if (file_inode == NULL)
 	{
 		local_errno = errno;
+		goto umount;
+	}
+	if (file_inode->mrec->flags & MFT_RECORD_IS_DIRECTORY)
+	{
+		local_errno = ENOTDIR;
 		goto umount;
 	}
 
@@ -155,6 +161,10 @@ close_inode:
 
 umount:
 	ntfs_umount(vol, TRUE);
+
+	if (local_errno)
+		errno = local_errno;
+	perror("le: ");
 
 	return -(local_errno ? local_errno: errno);
 }
