@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define __timespec_defined
 
@@ -32,6 +33,57 @@ static void get_fd_safe_dev_ops(struct ntfs_device_operations* ops)
 	ops->close = close_fd_safe;
 }
 
+static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
+{
+	if (_path == NULL || *_path != '/')
+	{
+		errno = -EINVAL;
+		return NULL;
+	}
+
+	// Get root
+	ntfs_inode* inode = ntfs_inode_open(vol, FILE_root);
+	// CHECK_TRUE(inode != NULL);
+	char* path = strdup(_path + 1);
+	char* save_path = path;
+
+	while(path && *path != '\0')
+	{
+		char* sep = strchr(path, '/');
+		if (sep != NULL)
+			*sep = '\0';
+
+		ntfschar* unicode = NULL;
+		int len_unicode = ntfs_mbstoucs(path, &unicode);
+		if (len_unicode < 0)
+			return NULL;
+		
+		u64 inode_num = ntfs_inode_lookup_by_name(inode, unicode, len_unicode);
+		free(unicode);
+		// CHECK_NNEG(inode_num);
+		
+		inode_num = MREF(inode_num);
+		ntfs_inode_close(inode);
+		inode = ntfs_inode_open(vol, inode_num);
+		if (inode == NULL)
+		{
+			errno = ENOENT;
+			return NULL;
+		}
+
+		if (sep == NULL && errno)
+		{
+			errno = ENOTDIR;
+			return NULL;
+		}
+
+		path = sep == NULL ? NULL : ++sep;
+	}
+
+	free(save_path);
+	return inode;
+}
+
 int dump_file(int img, const char *path, int out)
 {
 	// Notes:
@@ -58,7 +110,7 @@ int dump_file(int img, const char *path, int out)
 	// change errno to 0 if all good
 	int local_errno = 0;
 
-	ntfs_inode* file_inode = ntfs_pathname_to_inode(vol, NULL, path);
+	ntfs_inode* file_inode = pathname_to_inode(vol, path);
 	if (file_inode == NULL)
 	{
 		local_errno = errno;
