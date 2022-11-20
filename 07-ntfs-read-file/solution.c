@@ -64,19 +64,22 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 		}
 		
 		u64 inode_num = ntfs_inode_lookup_by_name(inode, unicode, len_unicode);
-		ntfs_inode_close(inode);
 		free(unicode);
 		if (inode_num == -1ul)
 		{
+			errno = (inode->mrec->flags & MFT_RECORD_IS_DIRECTORY) ? ENOENT : ENOTDIR;
+			ntfs_inode_close(inode);
 			free(save_path);
-			errno = ENOENT;
 			return NULL;
 		}
+
+		ntfs_inode_close(inode);
 		
 		inode_num = MREF(inode_num);
 		inode = ntfs_inode_open(vol, inode_num);
 		if (inode == NULL)
 		{
+			ntfs_inode_close(inode);
 			free(save_path);
 			errno = ENOENT;
 			return NULL;
@@ -166,6 +169,10 @@ close_inode:
 
 umount:
 	ntfs_umount(vol, TRUE);
+
+	// if (local_errno)
+	// 	errno = local_errno;
+	// perror("fff");
 
 	return -(local_errno ? local_errno: errno);
 }
