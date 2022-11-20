@@ -12,3 +12,5 @@ a.out
 06-ext2-walk-path/out
 08-ext2-read-sparse-file/img
 08-ext2-read-sparse-file/out
+07-ntfs-read-file/img
+07-ntfs-read-file/out
