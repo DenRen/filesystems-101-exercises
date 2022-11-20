@@ -37,7 +37,7 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 {
 	if (_path == NULL || *_path != '/')
 	{
-		errno = -EINVAL;
+		errno = ENOENT;
 		return NULL;
 	}
 
