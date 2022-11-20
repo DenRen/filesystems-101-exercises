@@ -58,13 +58,17 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 		ntfschar* unicode = NULL;
 		int len_unicode = ntfs_mbstoucs(path, &unicode);
 		if (len_unicode < 0)
+		{
+			free(save_path);
 			return NULL;
+		}
 		
 		u64 inode_num = ntfs_inode_lookup_by_name(inode, unicode, len_unicode);
 		ntfs_inode_close(inode);
 		free(unicode);
 		if (inode_num == -1ul)
 		{
+			free(save_path);
 			errno = ENOENT;
 			return NULL;
 		}
@@ -73,6 +77,7 @@ static ntfs_inode* pathname_to_inode(ntfs_volume *vol, const char *_path)
 		inode = ntfs_inode_open(vol, inode_num);
 		if (inode == NULL)
 		{
+			free(save_path);
 			errno = ENOENT;
 			return NULL;
 		}
