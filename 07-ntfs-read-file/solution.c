@@ -162,9 +162,5 @@ close_inode:
 umount:
 	ntfs_umount(vol, TRUE);
 
-	if (local_errno)
-		errno = local_errno;
-	perror("le: ");
-
 	return -(local_errno ? local_errno: errno);
 }
