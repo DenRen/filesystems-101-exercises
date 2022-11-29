@@ -14,3 +14,5 @@ a.out
 08-ext2-read-sparse-file/out
 07-ntfs-read-file/img
 07-ntfs-read-file/out
+09-btree/graph_0.gv
+09-btree/res.svg
