@@ -1,10 +1,10 @@
 .PHONY: build test
 
-SRC_SOLUTION := $(wildcard *.c*)
-HDR_SOLUTION := $(wildcard *.h*)
+SRC_SOLUTION := $(wildcard *.c)
+HDR_SOLUTION := $(wildcard *.h)
 
-# SRC_STDLIB := $(wildcard ../stdlib/*.c*)
-# HDR_SOLUTION := $(wildcard ../stdlib/*.h*)
+SRC_STDLIB := $(wildcard ../stdlib/*.c)
+HDR_SOLUTION := $(wildcard ../stdlib/*.h)
 
 test: build
 	./a.out

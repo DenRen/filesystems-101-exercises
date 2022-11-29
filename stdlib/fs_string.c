@@ -22,7 +22,7 @@ char* fs_xasprintf(const char *fmt, ...)
 	if ((size_t)n < sizeof(buf))
 		return fs_xstrdup(buf);
 
-	char *out = fs_xmalloc(n + 1);
+	char *out = (char*)fs_xmalloc(n + 1);
 	int m;
 	va_start(ap, fmt);
 	m = vsnprintf(out, n + 1, fmt, ap);
@@ -37,7 +37,7 @@ char* fs_xasprintf(const char *fmt, ...)
 char* fs_xstrdup(const char *x)
 {
 	size_t len = strlen(x);
-	char *copy = fs_xmalloc(len + 1);
+	char *copy = (char*)fs_xmalloc(len + 1);
 	memcpy(copy, x, len + 1);
 	return copy;
 }

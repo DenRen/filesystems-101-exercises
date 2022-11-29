@@ -1,7 +1,7 @@
 #include <solution.h>
 #include <stdlib.h>
 
-#include "btree.hpp"
+#include "btree.h"
 
 struct btree : public BTree<int>
 {};

@@ -20,8 +20,7 @@ void print_location(int fd, const char* file, long line, const char* func);
 
 #define CHECK_NNEG(func)	\
 	do {					\
-		int res = ((func)); \
-		if (res < 0)		\
+		if (((func)) < 0)	\
 		{					\
 			PRINT_ERR(func);\
 			return -errno;	\
