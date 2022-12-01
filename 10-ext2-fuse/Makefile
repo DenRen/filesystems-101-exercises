@@ -7,7 +7,6 @@ SRC_STDLIB := $(wildcard ../stdlib/*.c)
 HDR_STDLIB := $(wildcard ../stdlib/*.h)
 
 test: build
-	./a.out
 
 build: a.out
 
