@@ -191,6 +191,7 @@ struct reader_data_t
 	uint8_t* out_buf;			// Buffer for readed data
     int in;						// Descriptors of opened src and dest files
 	uint64_t unreaded_size;		// Size of file in bytes
+	uint64_t offset_size;		// Size of file in bytes
 };
 
 static inline uint64_t copyer_calc_size_read(uint64_t unreaded_size,
@@ -205,32 +206,42 @@ static int reader(void* data_ptr,
 {
     struct reader_data_t* data = (struct reader_data_t*)data_ptr;
 
-	const int size_read = copyer_calc_size_read(data->unreaded_size, blk_size);
-	if (blk_pos)
+	int size_read = copyer_calc_size_read(data->unreaded_size, blk_size);
+	data->unreaded_size -= size_read;
+
+	if ((size_t)size_read > data->offset_size)
 	{
-		const off64_t pos = blk_pos * blk_size;
-		CHECK_TRUE(pread64(data->in, data->out_buf, size_read, pos) == size_read);
+		size_read -= data->offset_size;
+		data->offset_size = 0;
+
+		if (blk_pos)
+		{
+			const off64_t pos = blk_pos * blk_size;
+			CHECK_TRUE(pread64(data->in, data->out_buf, size_read, pos) == size_read);
+		}
+		else
+		{
+			memset(data->out_buf, 0, size_read);
+		}
+
+		data->out_buf += size_read;
 	}
 	else
 	{
-		memset(data->out_buf, 0, size_read);
+		data->offset_size -= size_read;
 	}
 
-	data->out_buf += size_read;
-
-	data->unreaded_size -= size_read;
 	return data->unreaded_size == 0 ? BLK_VIEWER_END : BLK_VIEWER_CONT;
 }
 
-// TODO: stop to ignore offset
 static int my_fs_read(const char* path,
 					  char* buf,
 					  size_t size,
 					  off_t off,
 					  struct fuse_file_info* file_info)
 {
-	UNUSED(off);
 	UNUSED(file_info);
+
 	if (check_abs_path(path) < 0)
 		return -ENOENT;
 
@@ -246,9 +257,10 @@ static int my_fs_read(const char* path,
 		return -EISDIR;
 
 	struct reader_data_t copy_data = {
+		.out_buf = (uint8_t*)buf,
         .in = fs_desc.img,
-		.unreaded_size = min(get_inode_file_size(&inode), size),
-		.out_buf = (uint8_t*)buf
+		.unreaded_size = off + size,
+		.offset_size = off
     };
 
 	if (copy_data.unreaded_size)
