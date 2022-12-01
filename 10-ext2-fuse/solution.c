@@ -71,6 +71,22 @@ static int my_fs_getattr(const char* path,
 	return 0;
 }
 
+static mode_t ext2_file_type_to_mode(unsigned char ext2_file_type)
+{
+	switch (ext2_file_type)
+	{
+	case EXT2_FT_REG_FILE: 	return S_IFREG;
+	case EXT2_FT_DIR: 		return S_IFDIR;
+	case EXT2_FT_CHRDEV: 	return S_IFCHR;
+	case EXT2_FT_BLKDEV: 	return S_IFBLK;
+	case EXT2_FT_FIFO: 		return S_IFIFO;
+	case EXT2_FT_SOCK: 		return S_IFSOCK;
+	case EXT2_FT_SYMLINK: 	return S_IFLNK;
+	default:
+		return 0;
+	}
+}
+
 struct fill_catalog_files_data_t
 {
 	void* filler_buf_out;
@@ -99,7 +115,11 @@ static int readdir_filler(void* data_ptr,
 		memcpy(data->name_buf, entry->name, entry->name_len);
 		data->name_buf[entry->name_len] = '\0';
 
-		data->filler(data->filler_buf_out, data->name_buf, NULL, 0, 0);
+		struct stat st = {
+			.st_mode = ext2_file_type_to_mode(entry->file_type)
+		};
+
+		data->filler(data->filler_buf_out, data->name_buf, &st, 0, 0);
 
 		unreaded_size -= entry->rec_len;
 		entry = (struct ext2_dir_entry_2*)((uint8_t*)entry + entry->rec_len);

@@ -16,3 +16,4 @@ a.out
 07-ntfs-read-file/out
 09-btree/graph_0.gv
 09-btree/res.svg
+10-ext2-fuse/fs
