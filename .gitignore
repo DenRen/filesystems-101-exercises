@@ -17,3 +17,7 @@ a.out
 09-btree/graph_0.gv
 09-btree/res.svg
 10-ext2-fuse/fs
+11-grpc/bin/1
+11-grpc/bin/2
+11-grpc/bin/hash
+11-grpc/bin/parhash
